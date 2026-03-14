@@ -1,11 +1,5 @@
 import type { PatchContext, PatchResult } from "./types.js";
-
-const MAX_CONTENT_LENGTH = 10_240;
-
-function truncate(value: unknown): string {
-  const str = typeof value === "string" ? value : JSON.stringify(value);
-  return str.length > MAX_CONTENT_LENGTH ? str.slice(0, MAX_CONTENT_LENGTH) : str;
-}
+import { truncate } from "./utils.js";
 
 export interface OpenAIPatchTarget {
   Chat: {
@@ -22,6 +16,9 @@ export interface OpenAIPatchTarget {
   };
 }
 
+// NOTE: Streaming responses (stream: true) are not instrumented.
+// When streaming, the response is an AsyncIterable without a usage field.
+// Token counts and cost will be recorded as 0 for streamed calls.
 export function patchOpenAI(target: OpenAIPatchTarget, ctx: PatchContext): PatchResult {
   const origChat = target.Chat.Completions.prototype.create;
   const origEmbed = target.Embeddings.prototype.create;
@@ -65,6 +62,7 @@ export function patchOpenAI(target: OpenAIPatchTarget, ctx: PatchContext): Patch
     } catch (error) {
       const durationMs = Date.now() - startTime;
       const model = params.model ?? "unknown";
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       ctx.collector.recordLlmCall(traceId, {
         model,
@@ -73,6 +71,7 @@ export function patchOpenAI(target: OpenAIPatchTarget, ctx: PatchContext): Patch
         duration_ms: durationMs,
         agent_id: ctx.agentId,
         status: "error",
+        extraAttributes: { error: truncate(errorMessage) },
       });
 
       throw error;
@@ -99,6 +98,7 @@ export function patchOpenAI(target: OpenAIPatchTarget, ctx: PatchContext): Patch
 
       ctx.collector.recordLlmCall(traceId, {
         model,
+        spanName: `llm.embedding.${model}`,
         prompt_tokens: usage?.prompt_tokens ?? usage?.total_tokens ?? 0,
         completion_tokens: 0,
         duration_ms: durationMs,
@@ -110,14 +110,17 @@ export function patchOpenAI(target: OpenAIPatchTarget, ctx: PatchContext): Patch
     } catch (error) {
       const durationMs = Date.now() - startTime;
       const model = params.model ?? "unknown";
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       ctx.collector.recordLlmCall(traceId, {
         model,
+        spanName: `llm.embedding.${model}`,
         prompt_tokens: 0,
         completion_tokens: 0,
         duration_ms: durationMs,
         agent_id: ctx.agentId,
         status: "error",
+        extraAttributes: { error: truncate(errorMessage) },
       });
 
       throw error;

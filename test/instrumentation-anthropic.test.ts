@@ -67,11 +67,17 @@ describe("Anthropic Auto-Instrumentation", () => {
     expect(spans[0].attributes.prompt_tokens).toBe(12);
     expect(spans[0].attributes.completion_tokens).toBe(8);
     expect(spans[0].status).toBe("ok");
+    expect(spans[0].duration_ms).toBeGreaterThanOrEqual(0);
+
+    // Verify cost record was created
+    const costs = store.getCostsByTrace(activeTraceId);
+    expect(costs).toHaveLength(1);
+    expect(costs[0].model).toBe("claude-sonnet-4-6");
 
     patch.restore();
   });
 
-  it("records error status when the call throws", async () => {
+  it("records error status and captures error message when the call throws", async () => {
     const { target } = createMockAnthropic();
     target.Messages.prototype.create = vi.fn().mockRejectedValue(new Error("overloaded"));
     const ctx = makeContext();
@@ -89,6 +95,8 @@ describe("Anthropic Auto-Instrumentation", () => {
     const spans = store.getSpans(activeTraceId);
     expect(spans).toHaveLength(1);
     expect(spans[0].status).toBe("error");
+    expect(spans[0].attributes.error).toBe("overloaded");
+    expect(spans[0].duration_ms).toBeGreaterThanOrEqual(0);
 
     patch.restore();
   });

@@ -76,11 +76,18 @@ describe("OpenAI Auto-Instrumentation", () => {
       expect(spans[0].attributes.prompt_tokens).toBe(10);
       expect(spans[0].attributes.completion_tokens).toBe(5);
       expect(spans[0].status).toBe("ok");
+      expect(spans[0].duration_ms).toBeGreaterThanOrEqual(0);
+
+      // Verify cost record was created
+      const costs = store.getCostsByTrace(activeTraceId);
+      expect(costs).toHaveLength(1);
+      expect(costs[0].model).toBe("gpt-4o");
+      expect(costs[0].prompt_tokens).toBe(10);
 
       patch.restore();
     });
 
-    it("records error status when the call throws", async () => {
+    it("records error status and captures error message when the call throws", async () => {
       const { target } = createMockOpenAI();
       target.Chat.Completions.prototype.create = vi.fn().mockRejectedValue(new Error("API error"));
       const ctx = makeContext();
@@ -98,6 +105,8 @@ describe("OpenAI Auto-Instrumentation", () => {
       const spans = store.getSpans(activeTraceId);
       expect(spans).toHaveLength(1);
       expect(spans[0].status).toBe("error");
+      expect(spans[0].attributes.error).toBe("API error");
+      expect(spans[0].duration_ms).toBeGreaterThanOrEqual(0);
 
       patch.restore();
     });
@@ -142,7 +151,7 @@ describe("OpenAI Auto-Instrumentation", () => {
 
       const spans = store.getSpans(activeTraceId);
       expect(spans[0].attributes.input).toBeDefined();
-      expect(spans[0].attributes.output).toBeDefined();
+      expect(spans[0].attributes.output).toBe("Hello!");
 
       patch.restore();
     });
@@ -176,7 +185,7 @@ describe("OpenAI Auto-Instrumentation", () => {
   });
 
   describe("embeddings.create", () => {
-    it("records an embedding span", async () => {
+    it("records an embedding span with correct name", async () => {
       const { target } = createMockOpenAI();
       const ctx = makeContext();
       const patch = patchOpenAI(target, ctx);
@@ -190,9 +199,10 @@ describe("OpenAI Auto-Instrumentation", () => {
 
       const spans = store.getSpans(activeTraceId);
       expect(spans).toHaveLength(1);
-      expect(spans[0].name).toBe("llm.text-embedding-3-small");
+      expect(spans[0].name).toBe("llm.embedding.text-embedding-3-small");
       expect(spans[0].attributes.prompt_tokens).toBe(8);
       expect(spans[0].attributes.completion_tokens).toBe(0);
+      expect(spans[0].duration_ms).toBeGreaterThanOrEqual(0);
 
       patch.restore();
     });
