@@ -87,6 +87,7 @@ export class TraceCollector {
       agent_name?: string;
       parent_span_id?: string;
       status?: SpanStatus;
+      extraAttributes?: Record<string, unknown>;
     }
   ): Span {
     const cost = this.costCalculator.calculate(
@@ -112,6 +113,7 @@ export class TraceCollector {
         cost,
         agent_id: attrs.agent_id,
         agent_name: attrs.agent_name,
+        ...attrs.extraAttributes,
       },
     });
 
