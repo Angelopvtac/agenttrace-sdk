@@ -76,3 +76,7 @@ export { TraceStore } from "./query/trace-store.js";
 // Export
 export { OtlpExporter } from "./export/otlp-exporter.js";
 export type { OtlpExporterOptions } from "./export/otlp-exporter.js";
+
+// Instrumentation
+export { InstrumentationManager, setupInstrumentation } from "./instrumentation/index.js";
+export type { InstrumentationOptions, FrameworkName } from "./instrumentation/types.js";
