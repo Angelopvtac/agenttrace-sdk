@@ -1,6 +1,7 @@
-# AgentTrace
-
-Cross-agent observability for AI workflows — the call stack for AI.
+<p align="center">
+  <img src="./Agenttrace_logo.png" alt="AgentTrace" width="400">
+</p>
+<p align="center">Cross-agent observability for AI workflows — the call stack for AI.</p>
 
 [![npm version](https://img.shields.io/npm/v/agenttrace-sdk)](https://www.npmjs.com/package/agenttrace-sdk)
 [![license](https://img.shields.io/npm/l/agenttrace-sdk)](./LICENSE)
