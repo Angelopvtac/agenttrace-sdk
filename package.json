@@ -1,0 +1,58 @@
+{
+  "name": "agenttrace-sdk",
+  "version": "0.2.0",
+  "description": "Cross-agent observability platform — the call stack for AI",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "observability",
+    "tracing",
+    "opentelemetry",
+    "ai-agents",
+    "multi-agent",
+    "cost-tracking",
+    "anomaly-detection",
+    "flame-graph"
+  ],
+  "author": "Angelo Frisina",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angelofrisina/agenttrace-sdk.git"
+  },
+  "homepage": "https://github.com/angelofrisina/agenttrace-sdk",
+  "bugs": {
+    "url": "https://github.com/angelofrisina/agenttrace-sdk/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/sdk-trace-base": "^1.30.0",
+    "better-sqlite3": "^11.8.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.13.4",
+    "@vitest/coverage-v8": "^4.1.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.0"
+  }
+}
