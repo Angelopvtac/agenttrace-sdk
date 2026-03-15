@@ -5,6 +5,9 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "agenttrace": "./dist/cli/index.js"
+  },
   "files": [
     "dist",
     "LICENSE",
