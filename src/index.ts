@@ -57,7 +57,7 @@ export type {
 
 // Collector
 export { TraceCollector } from "./collector/trace-collector.js";
-export type { CollectorOptions } from "./collector/trace-collector.js";
+export type { CollectorOptions, TraceCollectorEvents } from "./collector/trace-collector.js";
 
 // Cost
 export { CostCalculator } from "./cost/cost-calculator.js";

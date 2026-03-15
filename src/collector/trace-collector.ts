@@ -4,9 +4,17 @@
  * Wraps OTel's tracing API to create structured spans for agent activities
  * (LLM calls, tool calls, messages, decisions, workflows) and persists them
  * to the TraceStore.
+ *
+ * Supports real-time event streaming via EventEmitter composition:
+ *   collector.on("span", handler)       — fires after every recordX() call
+ *   collector.on("trace:start", handler) — fires on startTrace()
+ *   collector.on("trace:end", handler)   — fires on endTrace()
+ *   collector.on("anomaly", handler)     — reserved for future anomaly wiring
+ *   collector.off(event, handler)        — unsubscribe a handler
  */
 
 import { trace, context, SpanStatusCode, type Tracer } from "@opentelemetry/api";
+import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import type {
   Span,
@@ -14,9 +22,25 @@ import type {
   SpanType,
   SpanStatus,
   SpanAttributes,
+  AnomalyAlert,
 } from "../types.js";
 import { TraceStore } from "../query/trace-store.js";
 import { CostCalculator } from "../cost/cost-calculator.js";
+
+/**
+ * Type map for TraceCollector events.
+ *
+ * - "span"        fires after every span is persisted (all recordX() methods)
+ * - "trace:start" fires after startTrace() upserts the trace record
+ * - "trace:end"   fires after endTrace() upserts the finalized trace record
+ * - "anomaly"     reserved for future anomaly detection wiring; not emitted yet
+ */
+export interface TraceCollectorEvents {
+  span: (span: Span) => void;
+  "trace:start": (traceId: string) => void;
+  "trace:end": (trace: Trace) => void;
+  anomaly: (alert: AnomalyAlert) => void;
+}
 
 export interface CollectorOptions {
   serviceName?: string;
@@ -28,6 +52,7 @@ export class TraceCollector {
   private store: TraceStore;
   private costCalculator: CostCalculator;
   private tracer: Tracer;
+  private emitter = new EventEmitter();
 
   /** Active trace metadata, keyed by trace_id. */
   private activeTraces = new Map<
@@ -39,6 +64,29 @@ export class TraceCollector {
     this.store = options.store;
     this.costCalculator = options.costCalculator ?? new CostCalculator();
     this.tracer = trace.getTracer(options.serviceName ?? "agenttrace");
+  }
+
+  /**
+   * Register a listener for a collector event.
+   * Events fire synchronously after the corresponding store operation completes.
+   */
+  on<K extends keyof TraceCollectorEvents>(
+    event: K,
+    handler: TraceCollectorEvents[K]
+  ): this {
+    this.emitter.on(event, handler as (...args: unknown[]) => void);
+    return this;
+  }
+
+  /**
+   * Unregister a previously registered listener.
+   */
+  off<K extends keyof TraceCollectorEvents>(
+    event: K,
+    handler: TraceCollectorEvents[K]
+  ): this {
+    this.emitter.off(event, handler as (...args: unknown[]) => void);
+    return this;
   }
 
   /**
@@ -68,6 +116,8 @@ export class TraceCollector {
       status: "ok",
       agents: [],
     });
+
+    this.emitter.emit("trace:start", traceId);
 
     return traceId;
   }
@@ -311,6 +361,8 @@ export class TraceCollector {
     this.store.upsertTrace(finalTrace);
     this.activeTraces.delete(traceId);
 
+    this.emitter.emit("trace:end", finalTrace);
+
     return finalTrace;
   }
 
@@ -343,6 +395,7 @@ export class TraceCollector {
     };
 
     this.store.insertSpan(span);
+    this.emitter.emit("span", span);
 
     // Update active trace metadata
     const meta = this.activeTraces.get(traceId);
