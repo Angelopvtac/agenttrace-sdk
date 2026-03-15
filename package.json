@@ -32,11 +32,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/angelofrisina/agenttrace-sdk.git"
+    "url": "https://github.com/Angelopvtac/agenttrace-sdk.git"
   },
-  "homepage": "https://github.com/angelofrisina/agenttrace-sdk",
+  "homepage": "https://github.com/Angelopvtac/agenttrace-sdk",
   "bugs": {
-    "url": "https://github.com/angelofrisina/agenttrace-sdk/issues"
+    "url": "https://github.com/Angelopvtac/agenttrace-sdk/issues"
   },
   "engines": {
     "node": ">=22"
@@ -48,11 +48,23 @@
     "better-sqlite3": "^11.8.1",
     "@opentelemetry/exporter-trace-otlp-http": "^0.57.0"
   },
+  "peerDependencies": {
+    "openai": ">=4.0.0",
+    "@anthropic-ai/sdk": ">=0.30.0"
+  },
+  "peerDependenciesMeta": {
+    "openai": {
+      "optional": true
+    },
+    "@anthropic-ai/sdk": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.13.4",
     "@vitest/coverage-v8": "^4.1.0",
     "typescript": "^5.7.3",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.0"
   }
 }

@@ -5,7 +5,7 @@
 
 [![npm version](https://img.shields.io/npm/v/agenttrace-sdk)](https://www.npmjs.com/package/agenttrace-sdk)
 [![license](https://img.shields.io/npm/l/agenttrace-sdk)](./LICENSE)
-[![tests](https://img.shields.io/badge/tests-216%20passing-brightgreen)](./test)
+[![tests](https://img.shields.io/badge/tests-238%20passing-brightgreen)](./test)
 
 ## Why
 
@@ -75,6 +75,48 @@ For in-memory usage (e.g., tests):
 ```ts
 const store = new TraceStore(":memory:");
 ```
+
+### Auto-Instrumentation
+
+Automatically trace all OpenAI and Anthropic SDK calls with a single setup line:
+
+```ts
+import { TraceStore, TraceCollector, setupInstrumentation } from "agenttrace-sdk";
+import OpenAI from "openai";
+
+const store = new TraceStore("./traces.db");
+const collector = new TraceCollector({ store });
+
+// One-line setup — patches OpenAI and Anthropic SDKs
+const instrumentation = setupInstrumentation({
+  collector,
+  frameworks: ["openai"],
+  agentId: "my-agent",
+});
+
+// Use OpenAI as normal — spans are recorded automatically
+const openai = new OpenAI();
+const traceId = collector.startTrace("my-workflow");
+instrumentation.setActiveTrace(traceId);
+
+const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [{ role: "user", content: "Hello" }],
+});
+
+const trace = collector.endTrace(traceId);
+console.log(`Cost: $${trace.total_cost}, Tokens: ${trace.total_tokens}`);
+
+// Cleanup
+instrumentation.restore();
+```
+
+Options:
+- `captureContent: true` — store prompts and completions (off by default for privacy)
+- `autoTrace: true` — auto-create traces without manual `startTrace()`/`endTrace()`
+- `frameworks: ["openai", "anthropic"]` — patch one or both SDKs
+
+> **Note:** Streaming responses (`stream: true`) are passed through but token/cost tracking requires the non-streaming response format.
 
 ## API Reference
 

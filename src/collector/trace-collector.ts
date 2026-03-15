@@ -87,6 +87,8 @@ export class TraceCollector {
       agent_name?: string;
       parent_span_id?: string;
       status?: SpanStatus;
+      extraAttributes?: Record<string, unknown>;
+      spanName?: string;
     }
   ): Span {
     const cost = this.costCalculator.calculate(
@@ -98,7 +100,7 @@ export class TraceCollector {
     const now = Date.now();
 
     const span = this.createSpan(traceId, {
-      name: `llm.${attrs.model}`,
+      name: attrs.spanName ?? `llm.${attrs.model}`,
       type: "agent.llm_call",
       parent_span_id: attrs.parent_span_id ?? null,
       status: attrs.status ?? "ok",
@@ -112,6 +114,7 @@ export class TraceCollector {
         cost,
         agent_id: attrs.agent_id,
         agent_name: attrs.agent_name,
+        ...attrs.extraAttributes,
       },
     });
 
